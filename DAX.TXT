@@ -1,0 +1,278 @@
+Northwind Dataset : 
+https://services.odata.org/Northwind/Northwind.svc/
+
+'-----------------------------------------------------------
+'-- CALENDER
+'-----------------------------------------------------------
+
+DateTable = CALENDAR (DATE (2005, 1, 1), DATE (2015, 12, 31))
+
+DateTable = CALENDAR (DATE (2005, 1, 1), MAXX(Data,Data[Date]))
+
+'-----------------------------------------------------------
+'-- Date Table
+'-----------------------------------------------------------
+
+DATE Table :
+Date = ADDCOLUMNS ( CALENDAR (DATE(2000,1,1), DATE(2025,12,31)),
+"DateAsInteger", FORMAT ( [Date], "YYYYMMDD" ),
+"Year", YEAR ( [Date] ),
+"MonthNo", FORMAT ( [Date], "MM" ),
+"YearMonthNo", FORMAT ( [Date], "YYYY/MM" ),
+"YearMonth", FORMAT ( [Date], "YYYY/mmm" ),
+"MonthShort", FORMAT ( [Date], "mmm" ),
+"MonthLong", FORMAT ( [Date], "mmmm" ),
+"WeekNo", WEEKDAY ( [Date] ),
+"WeekDay", FORMAT ( [Date], "dddd" ),
+"WeekDayShort", FORMAT ( [Date], "dddd" ),
+"Quarter", "Q" & FORMAT ( [Date], "Q" ),
+"YearQuarter", FORMAT ( [Date], "YYYY" ) & "/Q" & FORMAT ( [Date], "Q" )
+
+DimDate = ADDCOLUMNS ( CALENDAR (DATE(2000,1,1), DATE(2025,12,31)),
+"DateAsInteger", FORMAT ( [Date], "YYYYMMDD" ),
+"Year", YEAR ( [Date] ),
+"MonthNo", FORMAT ( [Date], "MM" ),
+"YearMonthNo", FORMAT ( [Date], "YYYY/MM" ),
+"YearMonth", FORMAT ( [Date], "YYYY/mmm" ),
+"MonthShort", FORMAT ( [Date], "mmm" ),
+"MonthLong", FORMAT ( [Date], "mmmm" ),
+"WeekNo", WEEKDAY ( [Date] ),
+"WeekDay", FORMAT ( [Date], "dddd" ),
+"WeekDayShort", FORMAT ( [Date], "dddd" ),
+"Quarter", "Q" & FORMAT ( [Date], "Q" ),
+"YearQuarter", FORMAT ( [Date], "YYYY" ) & "/Q" & FORMAT ( [Date], "Q" )
+
+Returns Table 
+
+'-----------------------------------------------------------
+'-- SUM and SUMX
+'-----------------------------------------------------------
+
+Total Sales = SUM(Order_Details[TotalSalesColumn])
+
+Total Sales X = SUMX(Order_Details,Order_Details[UnitPrice]*(1-Order_Details[Discount])*Order_Details[Quantity])
+
+TotalSalesColumn = Order_Details[Quantity]*(1-Order_Details[Discount])*Order_Details[UnitPrice]
+
+'-----------------------------------------------------------
+'-- COUNT
+'-----------------------------------------------------------
+
+COUNT Of Category Names = COUNT(Categories[CategoryName]) // DAX : COUNT 
+COUNT Of Numerical Variable = COUNT(Customers[CustomerID]) // DAX : COUNT 
+
+COUNTA - Count Of Category Names = COUNTA(Categories[CategoryName]) // DAX : COUN
+COUNTA of Numerical Column = COUNTA(Order_Details[UnitPrice])
+
+COUNTAX = COUNTAX(FILTER(Order_Details,Order_Details[UnitPrice]>100),Order_Details[UnitPrice])
+
+COUNTROWS = COUNTROWS(DISTINCT(Customers[CustomerID]))
+COUNTROWS With Expression = COUNTROWS(FILTER(Order_Details,Order_Details[ProductID]=39))
+DISTINCTCOUNT = DISTINCTCOUNT(Customers[CustomerID])
+
+'-----------------------------------------------------------
+'-- CALCULATE
+'-----------------------------------------------------------
+
+CAL TOT SALES = CALCULATE([Total Sales])
+
+CAL TOT SALES FOR ALL PRODUCTS = CALCULATE([Total Sales],ALL(Categories[CategoryName]))
+
+CAL TOT SALES FOR DAIRY PRODUCTS = CALCULATE([Total Sales],Categories[CategoryName]="Dairy Products")
+
+% OF TOTAL SALES = DIVIDE([Total Sales],[CAL TOT SALES FOR ALL PRODUCTS])
+
+CAL TOT SALES WITH 2 CONDITIONS = CALCULATE([Total Sales],FILTER(Categories,Categories[CategoryName]="Dairy Products" || Categories[CategoryName]="Confections"))
+
+'-----------------------------------------------------------
+'-- FILTER - Returns a Table
+'-----------------------------------------------------------
+
+FILTER = FILTER(Categories,Categories[CategoryName]="Dairy Products")
+
+FILTER BY CATEGORY ID = FILTER(Categories,Categories[CategoryID] >= 3)
+
+FILTER BY PRODUCT CATEGORIES = FILTER(Categories,OR(Categories[CategoryName] = "Dairy Products",Categories[CategoryName]="Confections"))
+
+'- Nested filter
+FILTER BY PRODUCT CATEGORIES 2 = FILTER((FILTER(Categories,Categories[CategoryID] >= 2)),Categories[CategoryID] >=3)
+
+'-----------------------------------------------------------
+'-- ALL, ALLEXCEPT
+'-----------------------------------------------------------
+
+ALL FUNCTION = COUNTROWS(ALL(Categories[CategoryID],Categories[CategoryName]))
+
+ALL EXCEPT FUNCTION = COUNTROWS(ALLEXCEPT(Categories,Categories[CategoryID],Categories[CategoryName]))
+
+'-----------------------------------------------------------
+'-- RANKX
+'-----------------------------------------------------------
+
+CategoryRank = RANKX(ALL(Categories),[Total Sales],,0)
+
+SelectedCategoryRank = RANKX(ALLSELECTED(Categories),[Total Sales],,0)
+
+wAll Selected woBlank Product Rank = if(NOT(ISBLANK([Total Sales])),RANKX(ALLSELECTED(Products),[Total Sales],,0),BLANK())
+
+wO ProductName SelectedCategoryRank = if(NOT(ISBLANK([Total Sales])),RANKX(ALLSELECTED(Products[ProductName]),[Total Sales],,0),BLANK())
+
+'-----------------------------------------------------------
+'-- RANKN / TOPN
+'-----------------------------------------------------------
+
+SelectedTopNValues = IF(HASONEVALUE(TopNTable[TopN]),VALUES(TopNTable[TopNValues]),MAXX(VALUES(Products[ProductName]),[ProductRankBySales]))
+
+Top N ProductName Select Rank = IF([ProductRankBySales]<=[SelectedTopNValues],[Total Sales])
+
+'-----------------------------------------------------------
+'-- SUM OF DISTINCT VALUE
+'-----------------------------------------------------------
+
+Sum Of Cost = SUM('Table'[Budget Cost Tooling])
+
+Sum of Distinct Values = SUMX(DISTINCT('Table'[PartDenom]),[Sum Of Cost])
+
+MAX Sum of Distinct Values = SUMX(DISTINCT('Table'[PartDenom]),MAX('Table'[Budget Cost Tooling]))
+
+Correct Distinct Values = SUMX(DISTINCT('Table'[PartDenom]),[MAX of Tooling Cost])
+
+'-----------------------------------------------------------
+'-- EARLIER
+'-----------------------------------------------------------
+WORKS WITH COLUMN
+
+EarlierSalesMeasure = calculate('Earlier Table'[EarlierTotalSales],FILTER('Earlier Table',EARLIER('Earlier Table'[Date])>='Earlier Table'[Date]))
+
+EarlierSalesMeasure_ReverseOrder = calculate('Earlier Table'[EarlierTotalSales],FILTER('Earlier Table','Earlier Table'[Date]>=EARLIER('Earlier Table'[Date])))
+
+'-----------------------------------------------------------
+'-- SUMMARIZE
+'-----------------------------------------------------------
+
+RETURNS TABLE
+
+SummarizeTable = SUMMARIZE(Order_Details,Order_Details[ProductID],"Total Sales",SUM(Order_Details[TotalSalesColumn]))
+
+'-----------------------------------------------------------
+'-- IF-THEN
+'-----------------------------------------------------------
+
+Discount Using IFThen = IF(Bikes[ProductCategory]="Road Bikes",0.5,
+IF(Bikes[ProductCategory]="Mountain Bikes",0.6,
+IF(Bikes[ProductCategory]="City Bike",0.2)))
+
+'-----------------------------------------------------------
+'-- SWITCH
+'-----------------------------------------------------------
+
+1) : 
+Discount Using Switch 2 DAX = SWITCH(Bikes[ProductCategory],
+"Road Bikes",0.5,
+"Mountain Bikes",0.6,
+"City Bike",0.2)
+
+2) :
+
+Discount Using Switch DAX = SWITCH(TRUE(),
+Bikes[ProductCategory]="Road Bikes",0.5,
+Bikes[ProductCategory]="Mountain Bikes",0.6,
+Bikes[ProductCategory]="City Bike",0.2)
+
+
+'--
+
+SwitchProductDataPrice = SWITCH(TRUE(),
+Bikes[Price]=0,BLANK(),
+Bikes[Price]<8000,"LOW PRICING",
+Bikes[Price]<25000,"MEDIUM PRICING",Bikes[Price]>20000,"PREMIUM PRICING")
+
+SwitchDiscount = SWITCH(TRUE(),
+Bikes[Discount Using Switch DAX]<=0.2,"LOW DISCOUNt",
+AND(Bikes[Discount Using Switch DAX]>=0.3, Bikes[Discount Using Switch DAX]<=0.5),"MEDIUM DISCOUNT",
+Bikes[Discount Using Switch DAX]>=0.6,"HIGH DISCOUNT")
+
+'- Formatting Sales as per Country currency Type
+
+Switch Formatted Revenue = IF(HASONEVALUE(Bikes[Country]),
+SWITCH(VALUES(Bikes[Country]),
+"Europe",format(Bikes[Total Price],"€0"),
+"USA",format(Bikes[Total Price],"$0"),
+"India",format(Bikes[Total Price],"?0"),
+"China",format(Bikes[Total Price],"     ¥0")),FORMAT(Bikes[Total Price],0))
+
+'-----------------------------------------------------------
+'-- DATEADD
+'-----------------------------------------------------------
+- 1 day backward
+NewDateAdd-DAY UPDATED = DATEADD(DimDate[Date],-1,DAY)
+
+-1 Month backward
+NewDateAdd-MONTH UPDATED = DATEADD(DimDate[Date],-1,MONTH)
+
+-1 Year backward
+NewDateAdd-YEAR UPDATED = DATEADD(DimDate[Date],-1,YEAR)
+
+'-----------------------------------------------------------
+'-- DATEDIFF
+'-----------------------------------------------------------
+Returns difference between two dates
+
+DATEDIFF DAX = DATEDIFF(Orders[OrderDate],Orders[ShippedDate],DAY)
+
+'-----------------------------------------------------------
+'-- YTD, MTD & QTD
+'-----------------------------------------------------------
+
+YTD = TOTALYTD([Total Sales X],DATESYTD(DimDate[Date]))
+MTD = TOTALMTD([Total Sales X],DATESMTD(DimDate[Date]))
+QTD = TOTALQTD([Total Sales X],DATESQTD(DimDate[Date]))
+
+'-----------------------------------------------------------
+'-- DIVIDE
+'-----------------------------------------------------------
+
+
+'-----------------------------------------------------------
+'-- REPT
+'-----------------------------------------------------------
+with sparklines
+
+Sparkline Test = if(HASONEVALUE(Products[ProductName]),REPT("|",[Total Sales X]/1000),Blank())
+
+'-----------------------------------------------------------
+'-- IN, CONTAINSROW
+'-----------------------------------------------------------
+
+1997 or 1998 = CALCULATE([Total Sales X],DimDate[Year]=1997||DimDate[Year]=1998)
+
+IN FUNCTION = CALCULATE([Total Sales X],DimDate[Year] in {1997,1998})
+
+CONTAINSROW FUNCTION = CALCULATE([Total Sales X],CONTAINSROW({1997,1998},DimDate[Year]))
+
+'-----------------------------------------------------------
+'-- DATESINPERIOD
+'-----------------------------------------------------------
+
+MOVING AVG = CALCULATE(AVERAGE(Order_Details[TotalSalesColumn]),DATESINPERIOD(DimDate[Date],LASTDATE(DimDate[Date]),-3,MONTH))
+
+'-----------------------------------------------------------
+'- LOOKUPVALUE
+'-----------------------------------------------------------
+
+LOOKUPVALUE = LOOKUPVALUE('Union Table 2'[Salary],'Union Table 2'[Serial],'Union Table 1'[Serial])
+
+'-----------------------------------------------------------
+'- SUBSTITUTE
+'-----------------------------------------------------------
+
+sub one value = SUBSTITUTE(Categories[Description],"Cheeses","Blue Cheese")
+
+
+sub multi value = SUBSTITUTE(
+    SUBSTITUTE(
+        SUBSTITUTE(Categories[Description],"Cheeses","Blue Cheese"),
+"seaweed and fish","fish"),"Prepared meats","Meat")
+
+sub | value = SUBSTITUTE(Categories[Description],",","|",1)
+
